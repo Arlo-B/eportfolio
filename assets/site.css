@@ -48,6 +48,9 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--acce
 h3{font-size:21px;margin:34px 0 4px;letter-spacing:-.01em}
 p{margin:0 0 16px}
 .wrap > p,.skillgroup p,.letter p,.page-head p{max-width:var(--prose)}
+/* standalone lists and role lines follow the same measure as prose */
+section .wrap > ul{max-width:var(--prose)}
+section .wrap > .role{max-width:min(100%,860px)}
 /* landing page introduction: two readable columns instead of one narrow one */
 .prose-cols{columns:2 440px;column-gap:44px;margin-bottom:4px}
 .prose-cols p{max-width:none;break-inside:avoid}
@@ -82,10 +85,10 @@ p{margin:0 0 16px}
 .rail-close{display:inline-flex;align-items:center;gap:6px;appearance:none;
   border:1px solid #c8d8e6;background:#fff;color:var(--muted);font:inherit;
   font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
-  padding:5px 11px;border-radius:100px;cursor:pointer;margin-bottom:14px}
+  padding:5px 11px;border-radius:100px;cursor:pointer;margin-bottom:10px}
 .rail-close:hover{border-color:var(--accent);color:var(--accent)}
 .filter-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.12em;
-  color:var(--muted);font-weight:700;margin:14px 0 8px}
+  color:var(--muted);font-weight:700;margin:12px 0 6px}
 .filter-label:first-of-type{margin-top:0}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .chip{appearance:none;border:1px solid #c8d8e6;background:#fff;color:var(--accent);
@@ -136,7 +139,7 @@ body.rail-closed .filterbar{display:none}
 /* ---------- project cards on the experience page ----------
    Every project keeps a definite boundary. Small ones pair up two across,
    photo heavy ones take the full width, so little space is wasted. */
-.projgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
+.projgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(420px,100%),1fr));
   gap:10px;align-items:start}
 .projgrid > .band{grid-column:1/-1;margin:20px 0 0}
 .projgrid > .band:first-child{margin-top:0}
@@ -188,13 +191,19 @@ li{margin-bottom:7px}
 .skill{margin-bottom:10px}
 .skill b{color:var(--ink)}
 .skillgroup{margin-top:22px}
-.skillgroup > h3{margin:0 0 10px;font-size:15px;color:var(--accent);
+.skillgroup > h3,section .wrap > h3{margin:0 0 10px;font-size:15px;color:var(--accent);
   text-transform:uppercase;letter-spacing:.08em}
-.skillcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:0 40px}
+section .wrap > h3{margin:34px 0 10px}
+.skillcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:0 40px}
 
-.entries{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));
-  gap:16px;align-items:start}
-.entries.is-summary{grid-template-columns:1fr;gap:0}
+/* Entries flow in balanced columns rather than grid rows, so a short entry
+   beside a long one no longer leaves the row's worth of empty space. */
+.entries{display:block}
+.entrygroup{columns:2 380px;column-gap:16px;margin:0}
+.entrygroup .entry{break-inside:avoid;-webkit-column-break-inside:avoid;
+  margin:0 0 16px;width:100%}
+.entries.is-summary .entrygroup{columns:1}
+.entries.is-summary .entrygroup .entry{margin:0}
 .entry.sum{padding:0;border:0;border-bottom:1px solid var(--line);border-radius:0}
 .entry.sum.is-role{background:none}
 .sumrow{display:flex;align-items:baseline;gap:12px;width:100%;appearance:none;border:0;
@@ -213,7 +222,6 @@ li{margin-bottom:7px}
 .sum-w{font-size:12.5px;color:var(--muted);font-style:italic;white-space:nowrap}
 .sumbody{padding:2px 4px 16px 20px}
 .sumbody ul{margin-top:0}
-.entries > .band{grid-column:1/-1}
 .entry{margin:0;padding:18px 20px;border:1px solid var(--line);border-radius:10px}
 .entry.is-role{border-color:#c8d8e6;background:#fbfdfe}
 .entry-org{font-size:13px;color:var(--muted);font-weight:600;
@@ -225,7 +233,6 @@ li{margin-bottom:7px}
 .entry li{font-size:14.5px}
 .entry li.hit{background:#fff8e1;box-shadow:-3px 0 0 #f0b429;
   padding-left:9px;margin-left:-12px;border-radius:2px}
-.entry ul.is-short li:nth-child(n+3){display:none}
 .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .pill{appearance:none;display:inline-flex;align-items:center;border:1px solid #c8d8e6;
   background:#fff;color:var(--accent);font:inherit;font-size:12.5px;font-weight:600;
@@ -235,6 +242,29 @@ li{margin-bottom:7px}
   justify-content:start;gap:8px;margin-top:12px}
 .gallery.mini figcaption{font-size:11px}
 .gallery.mini .shot-date{font-size:9.5px}
+
+/* ---------- resume grouped by organisation ----------
+   org header, the role that ran the period, then that period's projects
+   indented under it so nothing floats loose. */
+.og{margin:0 0 42px}
+.og:last-child{margin-bottom:0}
+.og-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px 18px;
+  flex-wrap:wrap;border-bottom:2px solid var(--accent);padding-bottom:8px}
+.og-head h3{margin:0;font-size:21px;color:var(--accent);letter-spacing:-.01em}
+.og-when{font-size:13px;color:var(--muted);font-style:italic;white-space:nowrap}
+.og-note{margin:8px 0 0;color:var(--muted);font-size:14px;max-width:var(--prose)}
+.og-role{margin:22px 0 0}
+.og-role > .entry.is-role{border:0;background:none;padding:0;border-radius:0}
+.og-role > .entry.is-role > .role strong{font-size:17.5px}
+.og-role > .entry.is-role > ul,.og-role > .entry.is-role > .acts{max-width:var(--prose)}
+.og-kids{margin:12px 0 0;padding-left:17px;border-left:2px solid #dbe6f0}
+.og-kids > .entry.sum:last-child{border-bottom:0}
+.og-kids .band.year.sub{margin:16px 0 0;border-bottom:0}
+.og-kids .band.year.sub:first-child{margin-top:0}
+.og-kids .entry.proj{margin:12px 0 0}
+.og-kids .sum-t{font-size:15px}
+.og-kids .sumbody{padding-bottom:14px}
+.og-kids .sumbody ul,.og-kids .entry.proj ul{max-width:var(--prose)}
 
 .todo{background:#fff8e1;border-left:3px solid #f0b429;padding:12px 14px;
   border-radius:3px;font-size:14px;color:#6b4c00;margin:12px 0;max-width:var(--prose)}
@@ -262,14 +292,19 @@ footer a{text-decoration:none}
   .nav-in{min-height:54px;padding:8px 20px}
   .wrap,.banner-cap,.filterbar-in{padding-left:18px;padding-right:18px}
   .entry{padding:16px}
+  .og-kids{padding-left:10px}
+  .og-head h3{font-size:19px}
   .projcard{padding:13px 13px 14px;margin:12px 0}
   .nav-controls{gap:12px;width:100%;padding:2px 0 8px;flex-wrap:nowrap;
-    overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);
+    mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent)}
   .nav-controls::-webkit-scrollbar{display:none}
   .seg{gap:6px;flex:none}
   .seg-l{font-size:9.5px}
   .seg-b button{font-size:12px;padding:5px 9px}
-  .nav-links{gap:16px;font-size:14px}
+  .nav-links{gap:12px}
+  .nav-links a{font-size:13.5px}
   .gallery,.projcard .gallery{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
   .wide{grid-column:1/-1}
   .ghead{grid-column:1/-1}
@@ -288,9 +323,9 @@ footer a{text-decoration:none}
     content:"Arlo Berry";display:block;font-weight:700;letter-spacing:.05em;
     font-size:13px;text-transform:uppercase;color:var(--accent);margin-bottom:14px;
   }
-  .chips{flex-direction:column;gap:5px}
-  .chip{width:100%;border-radius:7px;padding:8px 12px;font-size:13.5px}
-  .chips.tight .chip{padding:6px 12px;font-size:13px}
+  .chips{flex-direction:column;gap:4px}
+  .chip{width:100%;border-radius:7px;padding:6px 12px;font-size:13.5px}
+  .chips.tight .chip{padding:4px 12px;font-size:12.5px}
   .sortsel{max-width:none}
   .brand{display:none}
   .nav-in{justify-content:space-between}
@@ -307,8 +342,13 @@ footer a{text-decoration:none}
   body.filtering [data-skills]{opacity:1}
   .entries{display:block}
   .entry{border:0;padding:0;background:none;break-inside:avoid;margin-bottom:16px}
-  .entry ul[hidden]{display:block!important}
-  .expander{display:none}
+  .entry ul[hidden],.sumbody[hidden]{display:block!important}
+  .sum-c{display:none}
+  .sumrow{padding:0;border-left:0}
+  .entry.sum{border-bottom:0}
+  .og-kids{border-left:0;padding-left:14px}
+  .og{break-inside:auto}
+  .og-head{break-after:avoid}
   .entry li.hit,
   body.filtering p[data-skills].hit,
   body.filtering div[data-skills].hit{background:none;box-shadow:none;margin-left:0;padding-left:0}

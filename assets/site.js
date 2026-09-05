@@ -25,16 +25,57 @@
     { id: 'old',  label: 'Oldest' },
     { id: 'type', label: 'By type' }
   ];
+  /* the resume groups by organisation by default; the other pages keep the timeline */
+  var RESUME_SORTS = [
+    { id: 'org',  label: 'By organisation' },
+    { id: 'new',  label: 'Newest' },
+    { id: 'old',  label: 'Oldest' }
+  ];
   var VIEWS = [
+    { id: 'lead',  label: 'Roles' },
     { id: 'long',  label: 'Full' },
     { id: 'short', label: 'Summary' }
   ];
+  var ALL_SORTS = SORTS.concat([{ id: 'org', label: 'By organisation' }]);
+
+  function onResume() { return !!document.querySelector('[data-entries]'); }
+  function defaultSort() { return onResume() ? 'org' : 'new'; }
+
+  /* Organisation grouping. Roles and projects for one team are spread across a
+     few spellings of org, so the key is normalised; subjects stay on the
+     project as a label rather than becoming a group of one. */
+  function orgKey(e) {
+    if (e.cat === 'uni') return 'uts';
+    if (e.cat === 'personal') return 'personal';
+    return e.org.replace(/\s*\(Formula SAE\)/, '').replace(/^UTS and /, '')
+            .toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  }
+  function orgName(e) {
+    if (e.cat === 'uni') return 'University of Technology Sydney';
+    if (e.cat === 'personal') return 'Personal projects';
+    if (orgKey(e) === 'uts-motorsports') return 'UTS Motorsports, Formula SAE';
+    return e.org;
+  }
+  /* the line under a project: its subject, or who it was built with */
+  function subLabel(e) {
+    if (e.cat === 'uni' || e.cat === 'personal') return e.org.replace(/,\s*UTS$/, '');
+    return '';
+  }
+  function yearOf(e) { return e.to === 9999 ? e.from : e.to; }
+  function spanLabel(list) {
+    var f = 9999, t = 0;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].from < f) f = list[i].from;
+      if (list[i].to > t) t = list[i].to;
+    }
+    return f + (t === 9999 ? ' to present' : (t === f ? '' : ' to ' + t));
+  }
   var PICS = [
     { id: 'off', label: 'Hide' },
     { id: 'on',  label: 'Show' }
   ];
 
-  var state = { skill: 'all', cat: 'all', sort: 'new', view: 'long', pics: 'off' };
+  var state = { skill: 'all', cat: 'all', sort: 'new', view: 'lead', pics: 'off' };
 
   /* ---------- helpers ---------- */
 
@@ -64,7 +105,7 @@
 
   function readState() {
     var q = window.location.search;
-    var s = { skill: 'all', cat: 'all', sort: 'new', view: 'long', pics: 'off' };
+    var s = { skill: 'all', cat: 'all', sort: defaultSort(), view: 'lead', pics: 'off' };
     function pick(name, list, key) {
       var r = new RegExp('[?&]' + name + '=([a-z]+)').exec(q);
       if (!r) return;
@@ -72,9 +113,11 @@
     }
     pick('skill', SKILLS, 'skill');
     pick('cat', CATS, 'cat');
-    pick('sort', SORTS, 'sort');
+    pick('sort', ALL_SORTS, 'sort');
     pick('view', VIEWS, 'view');
     pick('pics', PICS, 'pics');
+    if (!onResume() && s.sort === 'org') s.sort = 'new';
+    if (onResume() && s.sort === 'type') s.sort = 'org';
     return s;
   }
 
@@ -82,8 +125,8 @@
     var p = [];
     if (s.cat !== 'all')   p.push('cat=' + s.cat);
     if (s.skill !== 'all') p.push('skill=' + s.skill);
-    if (s.sort !== 'new')  p.push('sort=' + s.sort);
-    if (s.view !== 'long') p.push('view=' + s.view);
+    if (s.sort !== defaultSort()) p.push('sort=' + s.sort);
+    if (s.view !== 'lead') p.push('view=' + s.view);
     if (s.pics !== 'off')  p.push('pics=' + s.pics);
     return p.length ? '?' + p.join('&') : '';
   }
@@ -147,7 +190,7 @@
     if (!host) return;
     var onResume = !!document.querySelector('[data-entries]');
 
-    var h = seg('sort', 'Order', SORTS);
+    var h = seg('sort', 'Order', onResume ? RESUME_SORTS : SORTS);
     if (onResume) {
       h += seg('view', 'Detail', VIEWS);
       h += seg('pics', 'Photos', PICS);
@@ -287,7 +330,10 @@
     var host = document.querySelector('[data-catintro]');
     if (!host) return;
     /* in type order the bands already carry the category heading */
-    if (state.cat === 'all' || state.sort === 'type') { host.innerHTML = ''; return; }
+    if (state.cat === 'all' || state.sort === 'type' ||
+        (state.sort === 'org' && document.querySelector('[data-entries]'))) {
+      host.innerHTML = ''; return;
+    }
     var c = cat(state.cat);
     host.innerHTML = '<div class="band"><h3>' + c.label + '</h3><p>' + esc(c.note) + '</p>' +
                      statBlock(c) + '</div>';
@@ -331,22 +377,144 @@
 
   /* ---------- resume page ---------- */
 
+  /* ---------- resume, grouped by organisation ----------
+     org > role > the projects done during that role > bullets.
+     A project is owned by the latest role that had started by the project's
+     last year; anything with no role over it falls into a year list at the
+     bottom of the organisation, which is where university and personal work
+     sits since it has no roles. */
+
+  function groupByOrg(list) {
+    var order = [], map = {};
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i], k = e.cat + '/' + orgKey(e);
+      if (!map[k]) { map[k] = { key: k, cat: e.cat, name: orgName(e), all: [] }; order.push(map[k]); }
+      map[k].all.push(e);
+    }
+    order.sort(function (a, b) { return catIndex(a.cat) - catIndex(b.cat); });
+
+    for (var g = 0; g < order.length; g++) {
+      var grp = order[g];
+      grp.when = spanLabel(grp.all);
+      grp.note = cat(grp.cat).note;
+      grp.roles = grp.all.filter(function (e) { return e.kind === 'role'; })
+                    .sort(function (a, b) { return b.from - a.from || b.to - a.to; });
+      var projects = grp.all.filter(function (e) { return e.kind !== 'role'; })
+                    .sort(function (a, b) { return yearOf(b) - yearOf(a) || b.from - a.from; });
+      for (var r = 0; r < grp.roles.length; r++) grp.roles[r].kids = [];
+      grp.loose = [];
+      for (var p = 0; p < projects.length; p++) {
+        var owner = null, y = yearOf(projects[p]);
+        for (var q = 0; q < grp.roles.length; q++) {
+          if (grp.roles[q].from <= y) { owner = grp.roles[q]; break; }
+        }
+        if (owner) owner.kids.push(projects[p]); else grp.loose.push(projects[p]);
+      }
+    }
+    return order;
+  }
+
+  function projectRow(e, mode, showPics) {
+    var meta = subLabel(e);
+    if (mode === 'long') {
+      return '<div class="entry proj" id="r-' + e.id + '">' +
+        '<div class="role"><strong>' + esc(e.title) + '</strong><span>' + esc(e.when) + '</span></div>' +
+        (meta ? '<div class="entry-org">' + esc(meta) + '</div>' : '') +
+        bulletList(e) + extras(e, showPics) + '</div>';
+    }
+    return '<div class="entry sum proj" id="r-' + e.id + '">' +
+      '<button class="sumrow" type="button" data-open aria-expanded="false">' +
+        '<span class="sum-c" aria-hidden="true"></span>' +
+        '<span class="sum-t">' + esc(e.title) + '</span>' +
+        '<span class="sum-o">' + esc(meta) + '</span>' +
+        '<span class="sum-w">' + esc(e.when) + '</span>' +
+      '</button>' +
+      '<div class="sumbody" data-body hidden>' + bulletList(e) + extras(e, showPics) + '</div>' +
+      '</div>';
+  }
+
+  function kidBlock(kids, mode, showPics, byYear) {
+    if (!kids.length) return '';
+    var h = '<div class="og-kids">', prev = null;
+    for (var i = 0; i < kids.length; i++) {
+      if (byYear && yearOf(kids[i]) !== prev) {
+        prev = yearOf(kids[i]);
+        h += '<div class="band year sub"><h3>' + prev + '</h3></div>';
+      }
+      h += projectRow(kids[i], mode, showPics);
+    }
+    return h + '</div>';
+  }
+
+  function renderTree(list, showPics) {
+    var groups = groupByOrg(list);
+    var mode = state.view === 'long' ? 'long' : 'short';
+    var rolesOpen = state.view !== 'short';
+    var h = '';
+
+    for (var g = 0; g < groups.length; g++) {
+      var grp = groups[g];
+      h += '<section class="og">' +
+           '<div class="og-head"><h3>' + esc(grp.name) + '</h3>' +
+           '<span class="og-when">' + esc(grp.when) + '</span></div>' +
+           (grp.note ? '<p class="og-note">' + esc(grp.note) + '</p>' : '');
+
+      for (var r = 0; r < grp.roles.length; r++) {
+        var role = grp.roles[r];
+        h += '<div class="og-role">';
+        if (rolesOpen) {
+          h += '<div class="entry is-role" id="r-' + role.id + '">' +
+               '<div class="role"><strong>' + esc(role.title) + '</strong>' +
+               '<span>' + esc(role.when) + '</span></div>' +
+               bulletList(role) + extras(role, showPics) + '</div>';
+        } else {
+          h += summaryRow(role, showPics);
+        }
+        h += kidBlock(role.kids, mode, showPics, false) + '</div>';
+      }
+      h += kidBlock(grp.loose, mode, showPics, true);
+      h += '</section>';
+    }
+    return h;
+  }
+
   function renderResume() {
     var host = document.querySelector('[data-entries]');
     if (!host) return 0;
     var list = selected();
     var short = state.view === 'short';
     var showPics = state.pics === 'on';
-    host.classList.toggle('is-summary', short);
-    var h = '';
+    host.classList.toggle('is-summary', short && state.sort !== 'org');
+    host.classList.toggle('is-tree', state.sort === 'org');
 
+    if (state.sort === 'org') {
+      host.innerHTML = list.length ? renderTree(list, showPics)
+        : '<p class="empty">No entries match that combination. Clear a filter to see more.</p>';
+      wireResume(host);
+      return list.length;
+    }
+
+    var h = '', open = false;
+
+    /* entries sit in a .entrygroup per band so they flow in balanced columns
+       instead of grid rows, which is what used to leave the large gaps */
     for (var i = 0; i < list.length; i++) {
       var e = list[i];
-      h += bandFor(list, i, state.cat === 'all');
+      var band = bandFor(list, i, state.cat === 'all');
+      if (band) {
+        if (open) { h += '</div>'; open = false; }
+        h += band;
+      }
+      if (!open) { h += '<div class="entrygroup">'; open = true; }
       h += short ? summaryRow(e, showPics) : fullEntry(e, showPics);
     }
+    if (open) h += '</div>';
     host.innerHTML = h || '<p class="empty">No entries match that combination. Clear a filter to see more.</p>';
+    wireResume(host);
+    return list.length;
+  }
 
+  function wireResume(host) {
     bind(host, '[data-open]', function (btn) {
       var body = btn.parentNode.querySelector('[data-body]');
       var opening = body.hidden;
@@ -362,7 +530,6 @@
       btn.textContent = opening ? 'Hide photos'
         : g.children.length + ' photo' + (g.children.length === 1 ? '' : 's');
     });
-    return list.length;
   }
 
   function bulletList(e) {
