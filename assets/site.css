@@ -265,6 +265,11 @@ section .wrap > h3{margin:34px 0 10px}
 .og-kids .sum-t{font-size:15px}
 .og-kids .sumbody{padding-bottom:14px}
 .og-kids .sumbody ul,.og-kids .entry.proj ul{max-width:var(--prose)}
+.og-kids .projgrid{margin:0}
+.og-role > .projcard{margin:18px 0 0}
+.projcard.is-role{border-color:#c8dcee;background:#f7fafd}
+.projcard.is-role h4{font-size:17.5px}
+.og .stats{margin:14px 0 0}
 
 .todo{background:#fff8e1;border-left:3px solid #f0b429;padding:12px 14px;
   border-radius:3px;font-size:14px;color:#6b4c00;margin:12px 0;max-width:var(--prose)}
