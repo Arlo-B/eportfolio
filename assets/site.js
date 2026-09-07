@@ -6,7 +6,7 @@
      ?cat=fsae      kind of work   (all | work | fsae | uni | personal)
      ?skill=welding skill          (all | any SKILLS id)
      ?sort=new      order          (new | old | type)
-     ?view=short    resume detail  (long | short)
+     ?view=lead     resume detail  (lead | long | short), Summary by default
      ?pics=on       resume photos  (off | on)
 
    Kind of work and skill live in the side panel. Order, detail and
@@ -65,7 +65,7 @@
     { id: 'on',  label: 'Show' }
   ];
 
-  var state = { skill: 'all', cat: 'all', sort: 'org', view: 'lead', pics: 'off' };
+  var state = { skill: 'all', cat: 'all', sort: 'org', view: 'short', pics: 'off' };
 
   /* ---------- helpers ---------- */
 
@@ -95,7 +95,7 @@
 
   function readState() {
     var q = window.location.search;
-    var s = { skill: 'all', cat: 'all', sort: 'org', view: 'lead', pics: 'off' };
+    var s = { skill: 'all', cat: 'all', sort: 'org', view: 'short', pics: 'off' };
     function pick(name, list, key) {
       var r = new RegExp('[?&]' + name + '=([a-z]+)').exec(q);
       if (!r) return;
@@ -114,7 +114,7 @@
     if (s.cat !== 'all')   p.push('cat=' + s.cat);
     if (s.skill !== 'all') p.push('skill=' + s.skill);
     if (s.sort !== 'org')  p.push('sort=' + s.sort);
-    if (s.view !== 'lead') p.push('view=' + s.view);
+    if (s.view !== 'short') p.push('view=' + s.view);
     if (s.pics !== 'off')  p.push('pics=' + s.pics);
     return p.length ? '?' + p.join('&') : '';
   }
@@ -164,6 +164,51 @@
     });
   }
 
+  /* ---------- light / dark theme ----------
+     No stored choice means the site follows the operating system, which the
+     stylesheet handles on its own. Pressing the button stores an explicit
+     choice on the html element, and that choice then wins over the system. */
+
+  var THEME_KEY = 'ab-theme';
+
+  var SUN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-13a1 1 0 0 1-1-1V1a1 1 0 0 1 2 0v2a1 1 0 0 1-1 1zm0 20a1 1 0 0 1-1-1v-2a1 1 0 0 1 2 0v2a1 1 0 0 1-1 1zM4 13H2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zm18 0h-2a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2zM5.6 6.99 4.19 5.58a1 1 0 1 1 1.42-1.42L7.02 5.57A1 1 0 0 1 5.6 6.99zm12.79 12.8-1.41-1.42a1 1 0 0 1 1.41-1.41l1.42 1.41a1 1 0 0 1-1.42 1.42zM4.19 18.37l1.41-1.41a1 1 0 1 1 1.42 1.41l-1.41 1.42a1 1 0 0 1-1.42-1.42zM16.98 5.57l1.41-1.41a1 1 0 1 1 1.42 1.42L18.4 6.99a1 1 0 0 1-1.42-1.42z"/></svg>';
+  var MOON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 13.3a1 1 0 0 0-1.13-.36 7.3 7.3 0 0 1-9.4-9.41A1 1 0 0 0 9.8 2.23a9.3 9.3 0 1 0 12 12 1 1 0 0 0-.2-.93z"/></svg>';
+
+  function systemDark() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  }
+  function effectiveTheme() {
+    var a = document.documentElement.getAttribute('data-theme');
+    if (a === 'dark' || a === 'light') return a;
+    return systemDark() ? 'dark' : 'light';
+  }
+  function setTheme(mode) {
+    if (mode === 'dark' || mode === 'light') {
+      document.documentElement.setAttribute('data-theme', mode);
+      store(THEME_KEY, mode);
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      try { window.localStorage.removeItem(THEME_KEY); } catch (e) {}
+    }
+    syncTheme();
+  }
+  function syncTheme() {
+    var b = document.querySelector('[data-theme-toggle]');
+    if (!b) return;
+    var dark = effectiveTheme() === 'dark';
+    /* the button advertises what it will switch you to, not where you are */
+    b.innerHTML = (dark ? SUN : MOON) + '<span>' + (dark ? 'Light' : 'Dark') + '</span>';
+    b.setAttribute('aria-label', 'Switch to ' + (dark ? 'light' : 'dark') + ' mode');
+    b.setAttribute('title', 'Switch to ' + (dark ? 'light' : 'dark') + ' mode');
+  }
+  function watchSystemTheme() {
+    if (!window.matchMedia) return;
+    var mq = window.matchMedia('(prefers-color-scheme:dark)');
+    var onChange = function () { if (!store(THEME_KEY)) syncTheme(); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  }
+
   /* ---------- top bar controls ---------- */
 
   function buildTopbar() {
@@ -176,10 +221,15 @@
       h += seg('view', 'Detail', VIEWS);
       h += seg('pics', 'Photos', PICS);
     }
+    h += '<div class="seg"><span class="seg-l">Theme</span>' +
+         '<button class="themebtn" type="button" data-theme-toggle></button></div>';
     host.innerHTML = h;
+    syncTheme();
 
     host.addEventListener('click', function (e) {
-      var b = e.target.closest ? e.target.closest('.seg button') : null;
+      var t = e.target.closest ? e.target.closest('[data-theme-toggle]') : null;
+      if (t) { setTheme(effectiveTheme() === 'dark' ? 'light' : 'dark'); return; }
+      var b = e.target.closest ? e.target.closest('.seg-b button') : null;
       if (!b) return;
       var patch = {};
       patch[b.getAttribute('data-key')] = b.getAttribute('data-val');
@@ -685,6 +735,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     state = readState();
+    watchSystemTheme();
     buildTopbar();
     buildPanel();
     buildRailToggle();

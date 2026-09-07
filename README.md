@@ -17,6 +17,13 @@ Live at: https://<username>.github.io/<repo>/
 Every page renders from `assets/data.js`, so editing an entry there updates the
 resume, the experience gallery and the landing strip at once.
 
+## Light and dark
+
+The site follows the operating system setting on first visit. The Theme button
+in the top bar switches it either way, and that choice is remembered in the
+browser and then wins over the system setting. Colours are CSS variables
+defined once per theme at the top of `assets/site.css`.
+
 ## Running locally
 
 Open `index.html` in a browser, or serve the folder:
