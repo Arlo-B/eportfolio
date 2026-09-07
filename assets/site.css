@@ -408,3 +408,45 @@ footer a{text-decoration:none}
   body.filtering div[data-skills].hit{background:none;box-shadow:none;margin-left:0;padding-left:0}
   .band{break-after:avoid}
 }
+
+/* ---------- in page viewer ----------
+   One overlay serves both the interview video and the project PDF, so a
+   visitor can look at either without losing their place on the page. */
+body.modal-open{overflow:hidden}
+.modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;
+  justify-content:center;padding:26px}
+.modal-back{position:absolute;inset:0;background:rgba(6,10,14,.72);
+  backdrop-filter:blur(3px);animation:modal-in .18s ease}
+.modal-box{position:relative;display:flex;flex-direction:column;width:100%;
+  background:var(--bg);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45);overflow:hidden;animation:modal-up .2s ease}
+.modal[data-kind="video"] .modal-box{max-width:1060px}
+.modal[data-kind="pdf"] .modal-box{max-width:1000px;height:100%}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:13px 14px 13px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.modal-head h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.11em;
+  color:var(--accent);font-weight:700}
+.modal-acts{display:flex;align-items:center;gap:9px;flex:none}
+.modal-x{appearance:none;display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border:1px solid var(--line-ctl);background:var(--surface);
+  color:var(--muted);font-size:20px;line-height:1;border-radius:100px;cursor:pointer;
+  transition:.14s}
+.modal-x:hover{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.modal-body{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--panel)}
+.modal-video{width:100%;aspect-ratio:16/9;background:#000}
+.modal-video iframe{width:100%;height:100%;display:block;border:0}
+.modal-pdf{flex:1;width:100%;min-height:0;border:0;display:block;background:var(--panel)}
+.modal-note{margin:0;padding:9px 20px;font-size:12.5px;color:var(--muted);
+  border-top:1px solid var(--line);background:var(--bg)}
+@keyframes modal-in{from{opacity:0}to{opacity:1}}
+@keyframes modal-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .modal-back,.modal-box{animation:none}
+}
+@media (max-width:720px){
+  .modal{padding:0}
+  .modal-box,.modal[data-kind="video"] .modal-box{border-radius:0;border:0;height:100%;
+    justify-content:center}
+  .modal-head h2{font-size:12px}
+  .modal-acts .pill{display:none}
+}

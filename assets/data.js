@@ -760,7 +760,7 @@ window.ENTRIES = [
     { t:'Designed and built a motorcycle safety vest using haptic pods to give riders an extra sense of surrounding vehicles.', s:['design','electronics'] },
     { t:'Recognised as top in the state for Design and Technology, selected for the Shape Exhibition and displayed at the Powerhouse Museum, Sydney.', s:['design'] }
   ],
-  link:{ href:'https://drive.google.com/file/d/1DLDCAGlfcq-ss1LrwurLuEZlUPF1Zd0-/view', label:'Shape Exhibition project portfolio' },
+  link:{ href:'PDF/shape-exhibition-portfolio.pdf', label:'Shape Exhibition project portfolio' },
   photos:[]
 },
 

@@ -164,6 +164,124 @@
     });
   }
 
+  /* ---------- in page viewer ----------
+     A YouTube link or a PDF link opens in an overlay instead of taking the
+     visitor away from the page. The anchor keeps its real href, so middle
+     click, right click and a browser without JavaScript all still work, and
+     on a narrow screen a PDF is handed to the browser rather than squeezed
+     into a panel. */
+
+  var lastFocus = null;
+
+  function youtubeId(href) {
+    var m = /[?&]v=([\w-]{6,})/.exec(href) ||
+            /youtu\.be\/([\w-]{6,})/.exec(href) ||
+            /\/embed\/([\w-]{6,})/.exec(href);
+    return m ? m[1] : null;
+  }
+
+  function modalKind(a) {
+    if (!a) return null;
+    if (a.hasAttribute('data-no-modal') || a.hasAttribute('download')) return null;
+    var href = a.getAttribute('href') || '';
+    if (youtubeId(href)) return 'video';
+    if (/\.pdf($|[?#])/i.test(href)) return 'pdf';
+    return null;
+  }
+
+  function buildModal() {
+    var d = document.createElement('div');
+    d.className = 'modal';
+    d.setAttribute('data-modal-root', '');
+    d.hidden = true;
+    d.innerHTML =
+      '<div class="modal-back" data-modal-close></div>' +
+      '<div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">' +
+        '<div class="modal-head">' +
+          '<h2 id="modal-title" data-modal-title></h2>' +
+          '<div class="modal-acts">' +
+            '<a class="pill" data-modal-out target="_blank" rel="noopener">Open in a new tab</a>' +
+            '<button class="modal-x" type="button" data-modal-close aria-label="Close">' +
+            '<span aria-hidden="true">&#215;</span></button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="modal-body" data-modal-body></div>' +
+      '</div>';
+    document.body.appendChild(d);
+
+    d.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('[data-modal-close]')) closeModal();
+    });
+  }
+
+  function openModal(kind, href, label) {
+    var root = document.querySelector('[data-modal-root]');
+    if (!root) return;
+    var body = root.querySelector('[data-modal-body]');
+    var out  = root.querySelector('[data-modal-out]');
+    root.querySelector('[data-modal-title]').textContent = label || '';
+    out.setAttribute('href', href);
+
+    if (kind === 'video') {
+      root.setAttribute('data-kind', 'video');
+      body.innerHTML = '<div class="modal-video"><iframe src="https://www.youtube-nocookie.com/embed/' +
+        youtubeId(href) + '?autoplay=1&amp;rel=0" title="' + attr(label || 'Video') + '" ' +
+        'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ' +
+        'allowfullscreen frameborder="0"></iframe></div>';
+    } else {
+      root.setAttribute('data-kind', 'pdf');
+      body.innerHTML = '<iframe class="modal-pdf" src="' + attr(href) + '#view=FitH" ' +
+        'title="' + attr(label || 'Document') + '"></iframe>' +
+        '<p class="modal-note">If the document does not appear, ' +
+        '<a href="' + attr(href) + '" target="_blank" rel="noopener" data-no-modal>open it in a new tab</a>.</p>';
+    }
+
+    lastFocus = document.activeElement;
+    root.hidden = false;
+    document.body.classList.add('modal-open');
+    var x = root.querySelector('.modal-x');
+    if (x) x.focus();
+  }
+
+  function closeModal() {
+    var root = document.querySelector('[data-modal-root]');
+    if (!root || root.hidden) return;
+    /* emptying the panel stops the video rather than leaving it playing */
+    root.querySelector('[data-modal-body]').innerHTML = '';
+    root.hidden = true;
+    document.body.classList.remove('modal-open');
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+    lastFocus = null;
+  }
+
+  function wireModal() {
+    buildModal();
+
+    document.addEventListener('click', function (e) {
+      if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var a = e.target.closest ? e.target.closest('a[href]') : null;
+      var kind = modalKind(a);
+      if (!kind) return;
+      /* a PDF on a phone reads far better in the browser's own viewer */
+      if (kind === 'pdf' && window.innerWidth < 720) return;
+      e.preventDefault();
+      openModal(kind, a.getAttribute('href'), a.textContent.replace(/\s+/g, ' ').trim());
+    });
+
+    document.addEventListener('keydown', function (e) {
+      var root = document.querySelector('[data-modal-root]');
+      if (!root || root.hidden) return;
+      if (e.key === 'Escape') { closeModal(); return; }
+      if (e.key !== 'Tab') return;
+      /* keep the keyboard inside the panel while it is open */
+      var f = root.querySelectorAll('a[href],button,iframe,[tabindex]:not([tabindex="-1"])');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  }
+
   /* ---------- light / dark theme ----------
      No stored choice means the site follows the operating system, which the
      stylesheet handles on its own. Pressing the button stores an explicit
@@ -736,6 +854,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     state = readState();
     watchSystemTheme();
+    wireModal();
     buildTopbar();
     buildPanel();
     buildRailToggle();

@@ -13,9 +13,19 @@ Live at: https://<username>.github.io/<repo>/
     assets/site.js      renders every page from data.js
     assets/site.css     styles
     images/             resized photos used on the site
+    PDF/                documents opened in the viewer, eg the Shape Exhibition portfolio
 
 Every page renders from `assets/data.js`, so editing an entry there updates the
 resume, the experience gallery and the landing strip at once.
+
+## In page viewer
+
+Any link to a YouTube video or to a PDF opens in an overlay on the page rather
+than navigating away. Nothing needs marking up: `assets/site.js` detects those
+two kinds of href and takes over the click. The anchor keeps its real href, so
+middle click, right click and no JavaScript all still work, and on a screen
+under 720px wide a PDF is handed to the browser's own viewer instead. Add
+`data-no-modal` to any link that should always navigate normally.
 
 ## Light and dark
 
