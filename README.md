@@ -9,8 +9,6 @@ Live at: https://<username>.github.io/<repo>/
     index.html          landing page
     experience.html     project gallery
     resume.html         filterable resume
-    reflection.html     internship reflection
-    application.html    role application
     assets/data.js      all content: 43 entries and 147 captioned photos
     assets/site.js      renders every page from data.js
     assets/site.css     styles
