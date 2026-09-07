@@ -124,8 +124,11 @@ section .wrap > .role{max-width:min(100%,860px)}
   border:1px solid var(--line-ctl);border-radius:100px;padding:9px 17px;transition:.16s}
 .links a:hover{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .links a svg{width:16px;height:16px;fill:currentColor;flex:none}
-.links .plain{background:none;border-color:transparent;font-weight:500;color:var(--muted)}
-.links .plain:hover{background:none;color:var(--accent)}
+/* the two links that open something in the viewer: outlined in the accent so
+   they read as buttons rather than as text sitting beside the contact details */
+.links .action{background:transparent;border-color:var(--accent);color:var(--accent)}
+.links .action:hover,.links .action:focus-visible{background:var(--accent);
+  color:var(--on-accent);border-color:var(--accent)}
 
 /* ---------- filter rail ---------- */
 .filterbar{background:var(--accent-soft);border-bottom:1px solid var(--line);
